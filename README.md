@@ -1,29 +1,31 @@
 # SSH Agent Persistence for Dev Containers
 
-## 简介
+[English](README.md) | [中文](README_CN.md)
 
-本工具通过 systemd 托管 `ssh-agent` 和 `socat`，提供一个**固定且持久**的 Socket 路径 (`/tmp/ssh-agent.sock`)，解决 WSL2/Linux 下 Dev Container 无法稳定复用宿主机 SSH 密钥的问题。
+## Introduction
 
-## 核心优势
+This tool manages `ssh-agent` and `socat` via systemd, providing a **fixed and persistent** Socket path (`/tmp/ssh-agent.sock`). It solves the issue where Dev Containers in WSL2/Linux cannot stably reuse the host's SSH keys.
 
-1. **Git 操作免密**：宿主机 SSH 密钥自动透传进容器，无需复制私钥。
-2. **路径固定**：解决 WSL2 重启导致 `/tmp/ssh-XXXXXX/` 路径变化的问题，配置一次永久有效。
-3. **安全隔离**：密钥保留在宿主机，容器只拥有使用权。
+## Key Features
 
-## 快速使用
+1. **Passwordless Git Operations**: Host SSH keys are automatically passed through to the container without copying private keys.
+2. **Fixed Path**: Solves the issue of `/tmp/ssh-XXXXXX/` path changing after WSL2 restarts. Configure once, valid forever.
+3. **Secure Isolation**: Keys remain on the host; the container only has usage rights.
 
-1. **安装服务**（在 WSL2/Linux 宿主机执行）
+## Quick Start
+
+1. **Install Service** (Run on WSL2/Linux host)
 
    ```bash
    cd ssh-agent-in-wsl && make install
    ```
 
-   > **提示**: 安装脚本会自动配置并启动 systemd 服务。如果服务已存在，它会尝试重启以应用最新配置。
-   > 建议将 `export SSH_AUTH_SOCK=/tmp/ssh-agent.sock` 加入 `~/.bashrc` 或 `~/.zshrc`。
+   > **Tip**: The install script automatically configures and starts systemd services. If services exist, it attempts to restart them to apply the latest config.
+   > It is recommended to add `export SSH_AUTH_SOCK=/tmp/ssh-agent.sock` to `~/.bashrc` or `~/.zshrc`.
 
-2. **配置 Dev Container**
+2. **Configure Dev Container**
 
-   在 `.devcontainer/devcontainer.json` 中加入：
+   Add the following to `.devcontainer/devcontainer.json`:
 
    ```jsonc
    "mounts": [
@@ -34,28 +36,28 @@
    }
    ```
 
-## 验证与维护
+## Verification & Maintenance
 
-### 验证状态
+### Verify Status
 
 ```bash
-# 宿主机查看密钥
+# Check keys on host
 SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add -l
 
-# 检查服务状态
+# Check service status
 systemctl --user status ssh-agent.service ssh-agent-socat.service
 ```
 
-### 手动重启服务
+### Manually Restart Service
 
-如果需要手动重载配置：
+If you need to manually reload the configuration:
 
 ```bash
 systemctl --user daemon-reload
 systemctl --user restart ssh-agent.service ssh-agent-socat.service
 ```
 
-## 卸载
+## Uninstall
 
 ```bash
 make uninstall
