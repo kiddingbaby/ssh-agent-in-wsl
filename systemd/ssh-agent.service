@@ -1,0 +1,15 @@
+[Unit]
+Description=User SSH Agent
+After=network.target
+
+[Service]
+Type=simple
+# -D: foreground mode
+# -a: bind address (%t is /run/user/<uid>)
+ExecStart=/usr/bin/ssh-agent -D -a %t/ssh-agent.sock
+# Optional: automatically add default private key on start (comment out to require manual ssh-add)
+#ExecStartPost=/bin/sh -c 'sleep 1; /usr/bin/ssh-add %h/.ssh/id_rsa 2>/dev/null || true'
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

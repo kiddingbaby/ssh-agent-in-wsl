@@ -1,0 +1,18 @@
+[Unit]
+Description=Socat proxy for ssh-agent -> /tmp/ssh-agent.sock
+After=ssh-agent.service
+BindsTo=ssh-agent.service
+
+[Service]
+Type=simple
+# Clean up potential stale socket
+ExecStartPre=/usr/bin/rm -f /tmp/ssh-agent.sock
+# Wait up to 10s for the agent socket to appear before starting
+ExecStartPre=/bin/sh -c 'timeout 10 sh -c "while [ ! -S %t/ssh-agent.sock ]; do sleep 0.1; done"'
+# By default use 0666 to allow container users (even non-root) to access it
+ExecStart=/usr/bin/socat UNIX-LISTEN:/tmp/ssh-agent.sock,mode=0666,fork UNIX-CONNECT:%t/ssh-agent.sock
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
