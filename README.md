@@ -2,63 +2,59 @@
 
 [English](README.md) | [中文](README_CN.md)
 
-## Introduction
+## Overview
 
-This tool manages `ssh-agent` and `socat` via systemd, providing a **fixed and persistent** Socket path (`/tmp/ssh-agent.sock`). It solves the issue where Dev Containers in WSL2/Linux cannot stably reuse the host's SSH keys.
+This tool uses **systemd** to manage `ssh-agent` and `socat`, providing a **fixed and persistent** socket path (`/tmp/ssh-agent.sock`). It solves the issue of Dev Containers on WSL2/Linux being unable to reliably reuse host SSH keys.
 
-## Key Features
+## Key Advantages
 
-1. **Passwordless Git Operations**: Host SSH keys are automatically passed through to the container without copying private keys.
-2. **Fixed Path**: Solves the issue of `/tmp/ssh-XXXXXX/` path changing after WSL2 restarts. Configure once, valid forever.
-3. **Secure Isolation**: Keys remain on the host; the container only has usage rights.
+1. **Passwordless Git operations**: Host SSH keys are automatically available inside the container without copying private keys.  
+2. **Fixed path**: Avoids the changing `/tmp/ssh-XXXXXX/` path issue after WSL2 restarts; configure once and it works persistently.  
+3. **Secure isolation**: Keys remain on the host; the container only has usage access.  
 
 ## Quick Start
 
-1. **Install Service** (Run on WSL2/Linux host)
-
-   ```bash
-   cd ssh-agent-in-wsl && make install
-   ```
-
-   > **Tip**: The install script automatically configures and starts systemd services. If services exist, it attempts to restart them to apply the latest config.
-   > It is recommended to add `export SSH_AUTH_SOCK=/tmp/ssh-agent.sock` to `~/.bashrc` or `~/.zshrc`.
-
-2. **Configure Dev Container**
-
-   Add the following to `.devcontainer/devcontainer.json`:
-
-   ```jsonc
-   "mounts": [
-     "source=/tmp/ssh-agent.sock,target=/ssh-agent,type=bind"
-   ],
-   "remoteEnv": {
-     "SSH_AUTH_SOCK": "/ssh-agent"
-   }
-   ```
-
-## Verification & Maintenance
-
-### Verify Status
+### 1. Install the service (on WSL2 host)
 
 ```bash
-# Check keys on host
-SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add -l
+# Install the service
+cd ssh-agent-in-wsl && make install
 
 # Check service status
 systemctl --user status ssh-agent.service ssh-agent-socat.service
+
+# Add your SSH key
+ssh-add ~/.ssh/<your-private-key>
+
+# Verify the key is accessible
+SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add -l
 ```
 
-### Manually Restart Service
+> **Tip**: The install script automatically configures and starts the systemd services.  
+> If the service already exists, it will attempt to restart and apply the latest configuration.  
+> It is recommended to add `export SSH_AUTH_SOCK=/tmp/ssh-agent.sock` to `~/.bashrc` for automatic setup on login.
 
-If you need to manually reload the configuration:
+### 2. Configure Dev Container
 
-```bash
-systemctl --user daemon-reload
-systemctl --user restart ssh-agent.service ssh-agent-socat.service
+Add the following to `.devcontainer/devcontainer.json`:
+
+```jsonc
+"mounts": [
+  "source=/tmp/ssh-agent.sock,target=/ssh-agent,type=bind"
+],
+"remoteEnv": {
+  "SSH_AUTH_SOCK": "/ssh-agent"
+}
 ```
 
-## Uninstall
+### 3. Uninstall the service
 
 ```bash
 make uninstall
 ```
+
+## Usage Flow Overview
+
+1. Start the systemd services on the host and add SSH keys.  
+2. Dev Container mounts the fixed socket path to reuse host keys for Git or other SSH operations without copying the keys.  
+3. SSH Agent remains persistent even after WSL2 or container restarts.
